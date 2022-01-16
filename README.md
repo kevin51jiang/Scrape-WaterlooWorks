@@ -1,7 +1,5 @@
 # Waterloo-Works-Scraping
  
-**WARNING: NO LONGER WORKS**: Script does not handle uWaterloo's new 2FA system.
-
 Series of scripts to scrape job listings from WaterlooWorks into a CSV then filter based on companies
 
 scrape.py is the main script, using Selenium to scrape WaterlooWorks data in to a CSV. 
@@ -12,7 +10,6 @@ filter.py can then be used to filter results from scrape.py based on a blacklist
 
 - BeautifulSoup
 - Selenium
-- Progressbar
 - Pick
 - ChromeDriver
 
@@ -28,7 +25,7 @@ On MacOS, you can alternatively use `brew install chromedriver`
 
 Run scrape.py using `python3 scrape.py`
 
-You will be prompted for your WaterlooWorks Login, and then asked if you want to run in headless mode. Note, if you run with the chromium browser showing, you may need to navigate back to the terminal window in order to select a couple options.
+You will be prompted for your WatIAM Login (j1234smith), and then asked if you want to run in headless mode. Note, if you run with the chromium browser showing, you may need to navigate back to the terminal window in order to select a couple options.
 
 On Mac, the first time you run the script you will get an error saying the `ChromeDriver cannot be opened as the developer cannot be verified`. Close the prompt, then go to `Settings -> Security & Privacy` and select `Open Anyways`. Rerun the script.
 
