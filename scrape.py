@@ -4,10 +4,11 @@ from bs4 import BeautifulSoup
 import getpass
 import re
 from pick import pick
-import progressbar
 import os
 import time
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
 
 def main():
     # Get user login information
@@ -21,8 +22,9 @@ def main():
     # password = ''
 
     # default co-op url
-    dashboard_url = "http://waterlooworks.uwaterloo.ca/myAccount/co-op/coop-postings.htm"
-    login_url = 'https://cas.uwaterloo.ca/cas/login?service=https://waterlooworks.uwaterloo.ca/waterloo.htm'
+    posting_url = "http://waterlooworks.uwaterloo.ca/myAccount/co-op/coop-postings.htm"
+    dashboard_url = "https://waterlooworks.uwaterloo.ca/myAccount/dashboard.htm"
+    login_url = 'https://waterlooworks.uwaterloo.ca/'
     output_name = 'output.csv'
 
     # start selenium in chromium 
@@ -34,9 +36,12 @@ def main():
     if os.path.exists("./chromedriver"):
         browser = webdriver.Chrome(executable_path="./chromedriver", chrome_options=chrome_options)
     else:
-        browser = webdriver.Chrome(chrome_options=chrome_options)
+        browser = webdriver.Chrome(options=chrome_options)
 
-    main_page_html = login(username, password, login_url, dashboard_url, browser)
+    main_page_html = login(username, password, login_url, dashboard_url, posting_url, browser)
+    if (not main_page_html):
+        print("ERROR: Duo 2FA timed out")
+        return 10
 
     # get quick search options from main page content
     quick_search_options = get_quick_search_options(main_page_html)
@@ -57,21 +62,32 @@ def main():
 
     print("Done!")
 
-def login(username, password, login_url, dashboard_url, browser):
+
+def login(username, password, login_url, dashboard_url, posting_url, browser):
+    # go to login page
+    browser.get(login_url)
+    browser.find_element_by_class_name("btn--landing").click()
+
+    # get username and password fields
+    user_field = browser.find_element_by_id("userNameInput") #username form field
+    pass_field = browser.find_element_by_id("passwordInput") #password form field
 
     # log in
-    browser.get(login_url)
-    user_field = browser.find_element_by_id("username") #username form field
-    pass_field = browser.find_element_by_id("password") #password form field
-    user_field.send_keys(username)
+    user_field.send_keys(username + "@uwaterloo.ca")
+    browser.find_element_by_id("nextButton").click()
     pass_field.send_keys(password)
+    browser.find_element_by_id("submitButton").click()
 
-    # click submit
-    browser.find_element_by_name("submit").click()
+    # wait for 2FA to finish
+    print("Please authenticate using Duo 2FA")
+    try:
+        WebDriverWait(browser, 120).until(
+                lambda browser: browser.current_url == dashboard_url)
+    except TimeoutException:
+        return None
 
-    browser.get(dashboard_url) #navigate to page behind login
-    
-    # Wait for javascript to run then grab page contents
+    browser.get(posting_url) #navigate to coop posting page
+    # wait for javascript to run then grab page contents
     time.sleep(3)
     return repr(browser.execute_script("return document.body.innerHTML")) #returns the inner HTML
 
@@ -111,12 +127,6 @@ def get_job_lists(choice, browser, output_name):
     next_page_buttons = []
     next_page_buttons = re.findall(pattern, page_html)
 
-    print(next_page_buttons)
-
-    # bar = progressbar.ProgressBar(max_value=self.job_lists_page_count)
-    # bar.update(self.gather_current_progress)
-
-
     # dots for loading screen
     dots = ""
 
@@ -126,7 +136,6 @@ def get_job_lists(choice, browser, output_name):
         while (next_page_buttons):
             
             # loading screen stuff
-            os.system.clear()
             print("Working" + dots)
             # update dots
             if (dots == "..."):
