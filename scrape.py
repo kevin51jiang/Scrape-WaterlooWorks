@@ -66,6 +66,7 @@ def main():
 def login(username, password, login_url, dashboard_url, posting_url, browser):
     # go to login page
     browser.get(login_url)
+    browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     browser.find_element_by_class_name("btn--landing").click()
 
     # get username and password fields
